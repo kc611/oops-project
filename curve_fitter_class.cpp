@@ -1,4 +1,5 @@
 #include<iostream>
+#include<vector>
 #include<limits.h>
 using namespace std;
 #define matrix_size 100 // for some reason matrix size 1000 will not execute memory overflow perhaps
@@ -129,7 +130,7 @@ class curve_fitter{
         }
     public:
         // This constructor would take argument as data points and assign default value to matrix and residuals
-        curve_fitter(int datapoints,double* x_data,double* y_data){
+        curve_fitter(int datapoints,vector<double> &x_data,vector<double> &y_data){
 
             num_data_points = datapoints;
 
