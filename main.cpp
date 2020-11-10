@@ -10,7 +10,6 @@ int data_size;
 
 double user_function(double x,double parameters[]){
     double a = parameters[0];double b = parameters[1];double c = parameters[2];
-    
     double y = a*x*x + b*x + c;
     return y;
 }
@@ -29,9 +28,15 @@ int main(){
     // //curve fitter class constructor called and data points passed to it.
     curve_fitter example_curve_fitter = curve_fitter(data_size,x_data_points,y_data_points);
 
-    // arguments here are in order: function itself, number of parameters,number of iterations,h(for differentiation)
-    example_curve_fitter.fit_curve(&user_function,3,1,0.0001);
+    // arguments here are in order: function itself, number of parameters,number of iterations,h(for differentiation),rmse tolerance;
+    example_curve_fitter.fit_curve(&user_function,3,1,0.0001,0.5);
 
+    cout<<"Final parameter values can be accessed by doing curvefitter.parameters"<<endl;
+
+    for(int i=0;i<3;i++){
+        cout<<example_curve_fitter.parameters[i]<<" ";
+    }
+    cout<<endl;
     cout<<"DONE"<<endl;
 
 }

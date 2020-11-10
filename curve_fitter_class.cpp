@@ -1,6 +1,7 @@
 #include<iostream>
 #include<vector>
 #include<limits.h>
+#include <cmath> 
 #include "matrix_class.cpp"
 using namespace std;
 #define matrix_size 100 // for some reason matrix size 1000 will not execute memory overflow perhaps
@@ -16,20 +17,19 @@ class curve_fitter{
         double step_value;
         double (*curr_function)(double,double*);
 
-        double residual_array[matrix_size];
         double x_data_points[matrix_size];
         double y_data_points[matrix_size];
-        double parameters[matrix_size];
+        
 
         Matrix jacobian_matrix;
+        Matrix residual_array;
 
         bool initialize_curve_fitter(){
             for(int i=0;i<matrix_size;i++){
-                residual_array[i]=0;
                 x_data_points[i]=0;
                 y_data_points[i]=0;
                 //sets initial guess between 0-10
-                parameters[i]=i+1;
+                parameters[i]=rand()%10;
             }
             return 0;
         }
@@ -39,11 +39,9 @@ class curve_fitter{
         }
 
         bool calc_residuals(){
-            
             for(int i=0;i<num_data_points;i++){
-                residual_array[i] = curr_function(x_data_points[i],parameters) - y_data_points[i];
+                residual_array.elements[i][0] = curr_function(x_data_points[i],parameters) - y_data_points[i];
             }
-
             return 0;
         }
 
@@ -55,15 +53,15 @@ class curve_fitter{
                     double f_x_h = curr_function(x_data_points[i],parameters);
                     parameters[j]-=step_value;
                     jacobian_matrix.elements[i][j]=f_x_h/step_value - f_x/step_value;
-                    cout<<jacobian_matrix.elements[i][j]<< " ";
                 }
-                cout<<endl;
             }
-
             return 0;
         }
 
-        bool update_parameters(){
+        bool update_parameters(Matrix residual_diff){
+            for(int i=0;i<num_parameters;i++){
+                parameters[i]-=residual_diff.elements[i][0];
+            }
             return 0;
         }
 
@@ -71,7 +69,22 @@ class curve_fitter{
             return 0;
         }
 
+        double calculate_rmse(){
+            double curr_rmse = 0;
+            for(int i=0;i<num_data_points;i++){
+                curr_rmse += (y_data_points[i] - curr_function(x_data_points[i],parameters));
+            }
+            return curr_rmse;
+        }
+
+        void round_off_parameters(){
+            for(int i=0;i<num_parameters;i++){
+                parameters[i] = round( parameters[i] * 1000.0 ) / 1000.0;
+            }
+        }
+
     public:
+        double parameters[matrix_size];
 
         curve_fitter(int datapoints,vector<double> &x_data,vector<double> &y_data){
             num_data_points = datapoints;
@@ -80,15 +93,19 @@ class curve_fitter{
                 x_data_points[i] = x_data[i];
                 y_data_points[i] = y_data[i];
             }
+            
         }
 
         // This must take in function as an argument (function() from main in this case) and create a function object from it
-        bool fit_curve(double (*function)(double,double*),int number_of_parameters,int number_of_iterations,double step){
+        bool fit_curve(double (*function)(double,double*),int number_of_parameters,int number_of_iterations,double step,double tolerance){
             // create a function ibject and assign it to curr function
             curr_function = function;
             step_value = step;
             num_parameters = number_of_parameters;
             num_iterations = number_of_iterations;
+            residual_array.rows = num_parameters;residual_array.columns = 1;
+            jacobian_matrix.rows = num_data_points;jacobian_matrix.columns = num_parameters;
+            bool flag=0;
             // This is optional
             show_graph();
 
@@ -102,15 +119,36 @@ class curve_fitter{
                 // jacobian matrix transpose is stored in: jacobian_matrix_transpose[matrix_size][matrix_size]
                 eval_jacobian();
 
-                // update the parameters in function object
-                update_parameters();
+                // Solving the equations to calculate residual amount
+                Matrix inverted = jacobian_matrix.transpose().multiply_with(jacobian_matrix).inverse();
 
-                // update graph optional
-                update_graph(); 
+                Matrix residual_diff = inverted.multiply_with(jacobian_matrix.transpose()).multiply_with(residual_array);
+
+                //updating parameters according to residuals
+                update_parameters(residual_diff);
+
+                // calculating least square error
+                double current_error = calculate_rmse();
+
+                cout<<"Round "<<(i)<<" : Root Mean Squared Error : "<<current_error<<endl;
+                // if error less than tolerance then break the loop
+                if(current_error<tolerance){
+                    flag=1;
+                    break;
+                }
+            }
+
+            // round off final parameter values upto 3 decimal points
+            round_off_parameters();
+
+            if(flag==1){
+                printf("Sucessfully converged the function upon the data points\n");
+            }else{
+                printf("Max number of iterations reached\n");
             }
 
             // return 1 if opreation successful 0 if failed
-            return 0;
+            return flag;
         }
 
     
