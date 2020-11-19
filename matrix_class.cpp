@@ -1,16 +1,22 @@
-#include<iostream>
-#include<vector>
-#include<math.h>
-#include <iomanip>   
-using namespace std;
 
-#define matrix_size 100 // for some reason matrix size 1000 will not execute memory overflow perhaps
+double pow(double base,int exp){ 
+    if( exp == 0){
+        return 1;
+    }
+
+    double curr=pow(base, exp/2); 
+
+    if(exp%2 == 0){
+        return curr*curr; 
+    }else{
+        return base*curr*curr; 
+    }
+} 
 
 class Matrix{
     private:
-        double determinant;
-
         double get_determinant(int size, double curr_matrix[][matrix_size]){
+            double determinant=0;
             if(size==1){
                 return curr_matrix[0][0];
             }
@@ -40,17 +46,16 @@ class Matrix{
         double elements[matrix_size][matrix_size];
         int rows,columns;
         
+        Matrix(){
+            for(int i=0;i<matrix_size;i++){
+                for(int j=0;j<matrix_size;j++){
+                    elements[i][j]=0;
+                }
+            }
+        }
 
         Matrix(int curr_row,int curr_columns){
             rows = curr_row;columns=curr_columns;
-            make_zero();
-        }
-
-        Matrix(){
-            make_zero();
-        }
-
-        void make_zero(){
             for(int i=0;i<matrix_size;i++){
                 for(int j=0;j<matrix_size;j++){
                     elements[i][j]=0;
@@ -68,10 +73,9 @@ class Matrix{
             return transpose_mat;
         }
 
-        Matrix multiply_with(Matrix other_matrix){
-            Matrix result = Matrix();
-            result.rows = rows;
-            result.columns = other_matrix.columns;
+        Matrix operator*(Matrix const &other_matrix){
+            Matrix result = Matrix(rows,other_matrix.columns);
+
             for(int i=0;i<result.rows;i++){
                 for(int j=0;j<result.columns;j++){
                     for(int k=0;k<columns;k++){
@@ -79,15 +83,15 @@ class Matrix{
                     }
                 }
             }
+            
             return result;
         }
 
-        double square_deteminant(){
-            determinant=0;
+        double determinant(){
             return get_determinant(rows,elements);
         }
 
-        Matrix square_adjoint(){ 
+        Matrix adjoint(){ 
             int size = rows;
             Matrix result = Matrix(size,size);
             if(size == 1){ 
@@ -114,7 +118,7 @@ class Matrix{
                         
                         iptr++;
                     }
-                    result.elements[j][i] = pow(-1, i+j) * cofactor.square_deteminant(); 
+                    result.elements[j][i] = pow(-1, i+j) * cofactor.determinant(); 
                 }
             } 
             return result;
@@ -122,14 +126,23 @@ class Matrix{
   
         Matrix inverse(){
             int size = rows;
-            Matrix result = square_adjoint();
-            double curr_det = square_deteminant();
+            Matrix result = adjoint();
+            double curr_det = determinant();
             for(int i=0;i<result.rows;i++){
                 for(int j=0;j<result.columns;j++){
                     result.elements[i][j] /= curr_det;
                 }
             }
-
             return result;
+        }
+
+        void print(){
+            for(int i=0;i<rows;i++){
+                for(int j=0;j<rows;j++){
+                    cout<<elements[i][j]<<" ";
+                }
+                cout<<endl;
+            }
+            cout<<endl;
         }
 };
